@@ -144,14 +144,22 @@ class Window(Frame):
         x2 = float(self.entryX2.get())
         y2 = float(self.entryY2.get())
         z2 = float(self.entryZ2.get())
+
+        coordArray = np.array([x1, x2, y1, y2, z1, z2, self.shape[0, 0] ,self.shape[0, 1], self.shape[0, 2], 
+                     self.shape[1, 0], self.shape[1, 1], self.shape[1, 2], 
+                     self.shape[2, 0], self.shape[2, 1], self.shape[2, 2], 
+                     self.shape[2, 0], self.shape[2, 1], self.shape[2, 1]])
         
-        for i in decimal_range(0, angle, angle / 30):
+        mmin = np.amin(coordArray) - .5
+        mmax = np.amax(coordArray) + .5
+        
+        for i in decimal_range(0, angle, 2):
             self.plot.clear()
             self.shape = np.delete(rotateShapeOnAngleRelativeToLineInSpace(np.matrix(np.c_[self.shape, np.ones((4, 1), dtype=float)]), 
-                                                                           angle / 30, x1, y1, z1, x2, y2, z2), np.s_[3:], axis=1)
+                                                                           2, x1, y1, z1, x2, y2, z2), np.s_[3:], axis=1)
             self.drawShape()
             self.drawLine(x1, y1, x2, y2, z1, z2)
-            self.plot.axis('auto')
+            self.plot.set(xlim=(mmin, mmax), ylim=(mmin, mmax), zlim=(mmin, mmax))
             self.canvas.draw()
             self.canvas.flush_events()
             
