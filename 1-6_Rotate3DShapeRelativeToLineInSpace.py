@@ -153,10 +153,10 @@ class Window(Frame):
         mmin = np.amin(coordArray) - .5
         mmax = np.amax(coordArray) + .5
         
-        for i in decimal_range(0, angle, 2):
+        for i in decimal_range(0, angle, angle / 30):
             self.plot.clear()
             self.shape = np.delete(rotateShapeOnAngleRelativeToLineInSpace(np.matrix(np.c_[self.shape, np.ones((4, 1), dtype=float)]), 
-                                                                           2, x1, y1, z1, x2, y2, z2), np.s_[3:], axis=1)
+                                                                           angle / 30, x1, y1, z1, x2, y2, z2), np.s_[3:], axis=1)
             self.drawShape()
             self.drawLine(x1, y1, x2, y2, z1, z2)
             self.plot.set(xlim=(mmin, mmax), ylim=(mmin, mmax), zlim=(mmin, mmax))
