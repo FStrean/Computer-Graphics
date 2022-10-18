@@ -3,7 +3,6 @@ from tkinter.ttk import *
 
 import matplotlib
 matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
 
 
 from matplotlib.figure import Figure
@@ -34,15 +33,12 @@ class Window(Frame):
         self.columnconfigure(2, weight=1)
         self.columnconfigure(3, weight=1)
         self.columnconfigure(4, weight=1)
-        self.columnconfigure(5, weight=0)
+        self.columnconfigure(5, weight=1)
         
-        self.rowconfigure(1, weight=0)
         self.rowconfigure(1, weight=1)
-        self.rowconfigure(2, weight=1)
+        self.rowconfigure(2, weight=0)
         self.rowconfigure(3, weight=0)
         self.rowconfigure(4, weight=0)
-        self.rowconfigure(5, weight=0)
-        self.rowconfigure(6, weight=0)
 
         self.createPlot()
         self.createMenu()
@@ -55,7 +51,7 @@ class Window(Frame):
         self.plot = figure.add_subplot()
         
         NavigationToolbar2Tk(self.canvas, self).grid(row=0, column=0, columnspan=6, sticky=E+W+S+N, pady=5, padx=5)
-        self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=6, sticky=E+W+S+N, pady=5, padx=5)
+        self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=3, sticky=E+W+S+N, pady=5, padx=5)
         
         
     def createMenu(self):
@@ -66,9 +62,9 @@ class Window(Frame):
         
         canvas.configure(xscrollcommand=hscrollbar.set, yscrollcommand=vscrollbar.set)
         
-        canvas.grid(row=2, column=0, columnspan=6, sticky=NSEW)
-        hscrollbar.grid(row=3, column=0, columnspan=6, sticky=W+E)
-        vscrollbar.grid(row=2, column=5, sticky=N+S + E)
+        canvas.grid(row=1, column=3, columnspan=3, sticky=NSEW)
+        hscrollbar.grid(row=2, column=3, columnspan=3, sticky=W+E)
+        vscrollbar.grid(row=1, column=5, sticky=N+S+E)
         canvas.create_window((0, 0), window=self.inputMenuContainer, anchor="nw")
         
         canvas.bind_all("<MouseWheel>", lambda e : canvas.yview_scroll(-1 * int((e.delta / 120)), "units"))
@@ -76,17 +72,18 @@ class Window(Frame):
         
         self.pointNubmer = 0
         self.rows = list()
-        self.cbs = list()
     
         self.addNewPoints(True)
+        self.addNewPoints()
+        self.addNewPoints()
         
         addNewPointsButton = Button(self, text="Add points", command=self.addNewPoints)
-        deletePointsButton = Button(self, text="Delete points", command=self.deletePoints)
+        deletePointsButton = Button(self, text="Delete selected points", command=self.deletePoints)
         buildPlotButton = Button(self, text="Build plot", command=self.onbuildPlot)
         
-        addNewPointsButton.grid(row=4, columnspan=6, sticky=NSEW, pady=5, padx=5)
-        deletePointsButton.grid(row=5, columnspan=6, sticky=NSEW, pady=5, padx=5)
-        buildPlotButton.grid(row=6, columnspan=6, sticky=NSEW, pady=5, padx=5)
+        addNewPointsButton.grid(row=3, column=3, columnspan=3, sticky=NSEW, pady=5, padx=5)
+        deletePointsButton.grid(row=4, column=3, columnspan=3, sticky=NSEW, pady=5, padx=5)
+        buildPlotButton.grid(row=2, column=0, columnspan=3, rowspan=3, sticky=NSEW, pady=5, padx=5)
         
         
         
@@ -102,23 +99,22 @@ class Window(Frame):
             entry2 = Entry(self.inputMenuContainer)
             entry2.grid(row=self.pointNubmer, column=3, sticky=EW, pady=5, padx=5)
 
-            cb = BooleanVar()
-            delete_checkbutton = Checkbutton(self.inputMenuContainer, text="Delete",variable=cb)
+
+            delete_checkbutton = Checkbutton(self.inputMenuContainer)
+            delete_checkbutton.state(['!alternate'])
             delete_checkbutton.grid(row=self.pointNubmer, column=4, sticky=EW, pady=5, padx=5)
             row = [label1, entry1, label2, entry2, delete_checkbutton]
-            self.rows.append(row)
-            self.cbs.append(cb)
-                    
+            self.rows.append(row)           
             
             self.pointNubmer += 1
     
     
     def deletePoints(self):
         rows = []
-        for i in range(len(self.rows)):
-            if(self.cbs[i].get()):
-                rows.append(self.rows[i])            
-        if(((len(rows) % 3) == 0) & ((self.pointNubmer - len(rows)) >= 4)):
+        for row in self.rows:
+            if row[4].instate(['selected']):
+                rows.append(row)       
+        if(((len(rows) % 3) == 0) & ((self.pointNubmer - len(rows)) >= 10)):
             for row in rows:
                 row_number = row[0].grid_info()["row"]
                 for column in row:
