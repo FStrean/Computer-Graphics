@@ -172,30 +172,24 @@ class Window(Frame):
             return
         rotate = None
         
-        if(self.points is None):
-            self.buildPlot()
-        
-        maximum_z = np.amax(np.sum((self.points - 
-                                    np.c_[np.zeros((np.shape(self.points)[0], 2), dtype=float), 
-                                          self.points[:, 2]]).getA()**2, axis=1)**(1/2))
+        if(self.points is None or np.shape(self.points)[0] != len(self.rows)):
+            self.onbuildPlot()
         
         set_lim_func = None
 
-        if(self.comboBox.get() == "X"):
-            maximum_y = np.amax(np.sum((self.points - 
+        if(self.comboBox.get() == "X"): 
+            maximum = np.amax(np.sum((self.points - 
+                                        np.c_[self.points[:, 0], 
+                                        np.zeros((np.shape(self.points)[0], 2), dtype=float)]).getA()**2, axis=1)**(1/2))
+            rotate = rotateRelativeToX
+            set_lim_func = lambda: self.plot.set(ylim=(-maximum, maximum), zlim=(-maximum, maximum))
+        elif(self.comboBox.get() == "Y"):      
+            maximum = np.amax(np.sum((self.points - 
                                         np.c_[np.c_[np.zeros((np.shape(self.points)[0], 1), dtype=float), 
                                                     self.points[:, 1]], 
                                               np.zeros((np.shape(self.points)[0], 1), dtype=float)]).getA()**2, axis=1)**(1/2))
-            max_value = max(maximum_z, maximum_y)
-            rotate = rotateRelativeToX
-            set_lim_func = lambda: self.plot.set(ylim=(-max_value, max_value), zlim=(-max_value, max_value))
-        elif(self.comboBox.get() == "Y"):
-            maximum_x = np.amax(np.sum((self.points - 
-                                        np.c_[self.points[:, 0], 
-                                        np.zeros((np.shape(self.points)[0], 2), dtype=float)]).getA()**2, axis=1)**(1/2))
-            max_value = max(maximum_z, maximum_x)
             rotate = rotateRelativeToY
-            set_lim_func = lambda: self.plot.set(xlim=(-max_value, max_value), zlim=(-max_value, max_value))
+            set_lim_func = lambda: self.plot.set(xlim=(-maximum, maximum), zlim=(-maximum, maximum))
         else: 
             return
         
@@ -203,7 +197,6 @@ class Window(Frame):
 
         for _ in decimal_range(0, angle, angle / 30):
             self.points = rotate(angle / 30, self.points)
-            
             for i in range(np.shape(self.points)[0]):
                 self.rows[i][1].delete(0,END)
                 self.rows[i][1].insert(0,float(self.points[i, 0]))

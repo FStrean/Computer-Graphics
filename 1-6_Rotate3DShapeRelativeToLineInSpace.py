@@ -1,15 +1,16 @@
 from tkinter import *
 from tkinter.ttk import *
+from turtle import color
 
 import matplotlib
 matplotlib.use("TkAgg")
-
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg,
     NavigationToolbar2Tk)
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from mpl_toolkits.mplot3d.art3d import Line3D
 
 import numpy as np
 
@@ -22,6 +23,7 @@ class Window(Frame):
                   [2, 0, 0], 
                   [1, 1, 0], 
                   [1, 0, 1]], dtype=float)
+        
         self.initUI()
         
  
@@ -47,7 +49,7 @@ class Window(Frame):
 
         self.createPlot()
         self.createMenu()
-        self.drawShape()
+        self.drawShape(self.shape)
         
         self.plot.axis('auto')
         self.pack()
@@ -57,10 +59,10 @@ class Window(Frame):
         figure = Figure(figsize=(5, 5))
     
         self.canvas = FigureCanvasTkAgg(figure, self)
-        toolbar = NavigationToolbar2Tk(self.canvas, self).grid(row=0, column=0, columnspan=6,
-            padx=5, sticky=E+W+S+N)
+        toolbar = NavigationToolbar2Tk(self.canvas, self)
         self.plot = figure.add_subplot(projection="3d")
         
+        toolbar.grid(row=0, column=0, columnspan=6,padx=5, sticky=E+W+S+N)
         self.canvas .get_tk_widget().grid(row=1, column=0, columnspan=6, rowspan=2, sticky=E+W+S+N, pady=5, padx=5)
     
         
@@ -120,51 +122,59 @@ class Window(Frame):
         btn.grid(row=7, columnspan=6, sticky=E+W+S+N, pady=5, padx=5)
         
     def drawLine(self, x1, y1, x2, y2, z1, z2):
-        self.plot.plot([x1, x2], [y1,y2], [z1,z2], color="red")
+        self.plot.plot([x1, x2], [y1, y2], [z1, z2], color="red")
     
-    def drawShape(self):
+    def drawShape(self, shape, face_color = [0.5, 0.5, 1]):
         vertices = [[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]]
 
-        tupleList = self.shape.tolist()
+        tupleList = shape.tolist()
         poly3d = [[tupleList[vertices[ix][iy]] for iy in range(len(vertices[0]))] for ix in range(len(vertices))]
-        self.plot.scatter(self.shape[:, 0], self.shape[:, 1], self.shape[:, 2])
+        self.plot.scatter(shape[:, 0], shape[:, 1], shape[:, 2])
         collection = Poly3DCollection(poly3d, linewidths=1, alpha=0.7)
-        face_color = [0.5, 0.5, 1] # alternative: matplotlib.colors.rgb2hex([0.5, 0.5, 1])
         edge_color=[0, 0, 0]
         collection.set_facecolor(face_color)
         collection.set_edgecolor(edge_color)
         self.plot.add_collection3d(collection)
     
     def onSubmit(self):
-        angle = float(self.entryAngle.get())
-        x1 = float(self.entryX1.get())
-        y1 = float(self.entryY1.get())
-        z1 = float(self.entryZ1.get())
-        
-        x2 = float(self.entryX2.get())
-        y2 = float(self.entryY2.get())
-        z2 = float(self.entryZ2.get())
+        try:
+            angle = float(self.entryAngle.get())
+            x1 = float(self.entryX1.get())
+            y1 = float(self.entryY1.get())
+            z1 = float(self.entryZ1.get())
+            
+            x2 = float(self.entryX2.get())
+            y2 = float(self.entryY2.get())
+            z2 = float(self.entryZ2.get())
+        except:
+            return
 
-        coordArray = np.array([x1, x2, y1, y2, z1, z2, self.shape[0, 0] ,self.shape[0, 1], self.shape[0, 2], 
-                     self.shape[1, 0], self.shape[1, 1], self.shape[1, 2], 
-                     self.shape[2, 0], self.shape[2, 1], self.shape[2, 2], 
-                     self.shape[2, 0], self.shape[2, 1], self.shape[2, 1]])
-        
-        mmin = np.amin(coordArray) - .5
-        mmax = np.amax(coordArray) + .5
-        
-        for i in decimal_range(0, angle, angle / 30):
+        edge_points = []
+        for point in self.shape:
+            for _angle in decimal_range(0, 360, 90):
+                edge_points.append(np.delete(
+                    rotateShapeOnAngleRelativeToLineInSpace(
+                        np.matrix(np.c_[point, np.ones((1, 1), dtype=float)]), 
+                        _angle, x1, y1, z1, x2, y2, z2), np.s_[3:], axis=1).getA()[0].tolist())
+                
+        edge_points = np.array(edge_points)
+        x_min, y_min, z_min = np.amin(edge_points[:, 0]), np.amin(edge_points[:, 1]), np.amin(edge_points[:, 2])
+        x_max, y_max, z_max = np.amax(edge_points[:, 0]), np.amax(edge_points[:, 1]), np.amax(edge_points[:, 2])
+            
+            
+        oldShape = self.shape.copy()
+        for _ in decimal_range(0, angle, angle / 30):
             self.plot.clear()
             self.shape = np.delete(rotateShapeOnAngleRelativeToLineInSpace(np.matrix(np.c_[self.shape, np.ones((4, 1), dtype=float)]), 
                                                                            angle / 30, x1, y1, z1, x2, y2, z2), np.s_[3:], axis=1)
-            self.drawShape()
+            self.drawShape(oldShape, face_color=[1, 0, 0])
+            self.drawShape(self.shape)
             self.drawLine(x1, y1, x2, y2, z1, z2)
-            self.plot.set(xlim=(mmin, mmax), ylim=(mmin, mmax), zlim=(mmin, mmax))
+            self.plot.set(xlim=(x_min, x_max), ylim=(y_min, y_max), zlim=(z_min, z_max))
             self.canvas.draw()
             self.canvas.flush_events()
             
             plt.pause(0.001)
-        
         
         
  
@@ -215,7 +225,6 @@ def rotateShapeOnAngleRelativeToLineInSpace(shape, angle : float, x1 : float, y1
     
 def main():
     root = Tk()
-    root.columnconfigure(1, weight=1)
     app = Window()
     root.mainloop()
 
