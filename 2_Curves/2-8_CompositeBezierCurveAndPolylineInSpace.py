@@ -3,6 +3,7 @@ from tkinter.ttk import *
 
 import matplotlib
 matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 
 
 from matplotlib.figure import Figure
@@ -48,7 +49,7 @@ class Window(Frame):
         figure = Figure(figsize=(5, 5))
     
         self.canvas = FigureCanvasTkAgg(figure, self)
-        self.plot = figure.add_subplot()
+        self.plot = figure.add_subplot(projection="3d")
         
         NavigationToolbar2Tk(self.canvas, self).grid(row=0, column=0, columnspan=6, sticky=E+W+S+N, pady=5, padx=5)
         self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=3, sticky=E+W+S+N, pady=5, padx=5)
@@ -72,10 +73,25 @@ class Window(Frame):
         
         self.pointNubmer = 0
         self.rows = list()
-    
+        
         self.addNewPoints(True)
         self.addNewPoints()
         self.addNewPoints()
+        
+        rotateRelativeToXOrYButton = Button(self, text="Rotate", command=self.rotatePlot)
+        label1 = Label(self, text="curve relative to ")
+        self.comboBox = Combobox(self, values=["X", "Y"])
+        label2 = Label(self, text="on")
+        self.entry = Entry(self)
+        label3 = Label(self, text="degrees")
+        
+        rotateRelativeToXOrYButton.grid(row=2, column=0, sticky=NSEW, pady=5, padx=5)
+        label1.grid(row=2, column=1, sticky=E, pady=5, padx=5)
+        self.comboBox.grid(row=2, column=2, sticky=NSEW, pady=5, padx=5)
+        label2.grid(row=3, column=0, sticky=E, pady=5, padx=5)
+        self.entry.grid(row=3, column=1, sticky=EW, pady=5, padx=5)
+        label3.grid(row=3, column=2, sticky=E, pady=5, padx=5)
+        
         
         addNewPointsButton = Button(self, text="Add points", command=self.addNewPoints)
         deletePointsButton = Button(self, text="Delete selected points", command=self.deletePoints)
@@ -83,11 +99,9 @@ class Window(Frame):
         
         addNewPointsButton.grid(row=3, column=3, columnspan=3, sticky=NSEW, pady=5, padx=5)
         deletePointsButton.grid(row=4, column=3, columnspan=3, sticky=NSEW, pady=5, padx=5)
-        buildPlotButton.grid(row=2, column=0, columnspan=3, rowspan=3, sticky=NSEW, pady=5, padx=5)
-        
-        
-        
-    def addNewPoints(self, first=False):
+        buildPlotButton.grid(row=4, column=0, columnspan=3, sticky=NSEW, pady=5, padx=5)
+    
+    def addNewPoints(self, first = False):
         for _ in range(3 + first):       
             label1 = Label(self.inputMenuContainer, text="x")
             label1.grid(row=self.pointNubmer, column=0, sticky=E, pady=5, padx=5)
@@ -98,13 +112,17 @@ class Window(Frame):
             label2.grid(row=self.pointNubmer, column=2, sticky=E, pady=5, padx=5)
             entry2 = Entry(self.inputMenuContainer)
             entry2.grid(row=self.pointNubmer, column=3, sticky=EW, pady=5, padx=5)
-
-
+                
+            label3 = Label(self.inputMenuContainer, text="z")
+            label3.grid(row=self.pointNubmer, column=4, sticky=E, pady=5, padx=5)
+            entry3 = Entry(self.inputMenuContainer)
+            entry3.grid(row=self.pointNubmer, column=5, sticky=EW, pady=5, padx=5)
+            
             delete_checkbutton = Checkbutton(self.inputMenuContainer)
             delete_checkbutton.state(['!alternate'])
-            delete_checkbutton.grid(row=self.pointNubmer, column=4, sticky=EW, pady=5, padx=5)
-            row = [label1, entry1, label2, entry2, delete_checkbutton]
-            self.rows.append(row)           
+            delete_checkbutton.grid(row=self.pointNubmer, column=6, sticky=EW, pady=5, padx=5)
+            row = [label1, entry1, label2, entry2, label3, entry3, delete_checkbutton]
+            self.rows.append(row)
             
             self.pointNubmer += 1
     
@@ -112,7 +130,7 @@ class Window(Frame):
     def deletePoints(self):
         rows = []
         for row in self.rows:
-            if row[4].instate(['selected']):
+            if row[6].instate(['selected']):
                 rows.append(row)       
         if(((len(rows) % 3) == 0) & ((self.pointNubmer - len(rows)) >= 10)):
             for row in rows:
@@ -138,11 +156,13 @@ class Window(Frame):
         self.points=list()
         try:
             for row in self.rows:
-                self.points.append([float(row[1].get()), float(row[3].get())])
+                self.points.append([float(row[1].get()), float(row[3].get()), float(row[5].get())])
         except:
             return
         self.points = np.array(self.points)
-        self.drawCompoisiteBezierCurveAndPolylineWithPoints(self.points.tolist())
+        self.drawCompoisiteBezierCurveAndPolylineWithPoints(self.points)
+
+
         
         
     def drawCompoisiteBezierCurveAndPolylineWithPoints(self, input_points, color="blue"):
@@ -158,9 +178,60 @@ class Window(Frame):
         points = np.array(points)
         curve = buildCompositeBezierCurveWithPoints(points)
         for part in curve:  
-            self.plot.plot(part[:, 0], part[:, 1], color=color)
-        self.plot.plot(self.points[:, 0], self.points[:, 1], 'o:', color=color)
+            self.plot.plot(part[:, 0], part[:, 1], part[:, 2], color=color)
+        self.plot.plot(input_points[:, 0], input_points[:, 1], input_points[:, 2], 'o:', color=color)
        
+        
+    def rotatePlot(self):
+        try:
+            angle = float(self.entry.get()) * np.pi / 180
+        except:
+            return
+        rotate = None
+        
+        if(self.points is None or np.shape(self.points)[0] != len(self.rows)):
+            self.onbuildPlot()
+        
+        set_lim_func = None
+
+        if(self.comboBox.get() == "X"): 
+            maximum = np.amax(np.sum((self.points - 
+                                        np.c_[self.points[:, 0], 
+                                        np.zeros((np.shape(self.points)[0], 2), dtype=float)])**2, axis=1)**(1/2))
+            rotate = rotateRelativeToX
+            set_lim_func = lambda: self.plot.set(ylim=(-maximum, maximum), zlim=(-maximum, maximum))
+        elif(self.comboBox.get() == "Y"):      
+            maximum = np.amax(np.sum((self.points - 
+                                        np.c_[np.c_[np.zeros((np.shape(self.points)[0], 1), dtype=float), 
+                                                    self.points[:, 1]], 
+                                              np.zeros((np.shape(self.points)[0], 1), dtype=float)])**2, axis=1)**(1/2))
+            rotate = rotateRelativeToY
+            set_lim_func = lambda: self.plot.set(xlim=(-maximum, maximum), zlim=(-maximum, maximum))
+        else: 
+            return
+        
+        oldPoints = self.points.copy()
+
+        for _ in decimal_range(0, angle, angle / 30):
+            self.points = rotate(angle / 30, np.matrix(self.points))
+            print(type(self.points))
+            for i in range(np.shape(self.points)[0]):
+                self.rows[i][1].delete(0,END)
+                self.rows[i][1].insert(0,float(self.points[i, 0]))
+                
+                self.rows[i][3].delete(0,END)
+                self.rows[i][3].insert(0,float(self.points[i, 1]))
+                
+                self.rows[i][5].delete(0,END)
+                self.rows[i][5].insert(0,float(self.points[i, 2]))
+                
+            self.plot.clear()
+            set_lim_func()
+            self.buildPlot()
+            self.drawCompoisiteBezierCurveAndPolylineWithPoints(oldPoints, color="red")
+            self.canvas.draw()
+            self.canvas.flush_events()
+            plt.pause(0.001)
         
  
 def decimal_range(start, stop, increment):
@@ -195,6 +266,21 @@ def buildCompositeBezierCurveWithPoints(points):
             intermediate.append(intermediate_line)
         result.append(intermediate)
     return np.array(result)
+
+
+def rotateRelativeToX(angle, points):
+    print(type(points))
+    rotateMatrix = np.matrix([[1, 0, 0],
+                              [0, np.cos(angle), -np.sin(angle)],
+                              [0, np.sin(angle), np.cos(angle)]])
+    return points * rotateMatrix
+
+
+def rotateRelativeToY(angle, points):
+    rotateMatrix = np.matrix([[np.cos(angle), 0, np.sin(angle)],
+                              [0, 1, 0],
+                              [-np.sin(angle), 0, np.cos(angle)]])
+    return points * rotateMatrix
 
 
     
