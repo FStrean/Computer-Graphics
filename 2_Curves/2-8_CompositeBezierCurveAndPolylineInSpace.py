@@ -18,7 +18,16 @@ class Window(Frame):
     
     def __init__(self, parent):
         super().__init__(parent)
-        self.points = None
+        self.points = [[10, 15, 0],
+                       [-11, -15, 8],
+                       [0, 0, 40],
+                       [58, 25, -5],
+                       [-40, 40, 14],
+                       [-9, -30, -41],
+                       [8, 8, 20],
+                       [26, 5, -30],
+                       [-22, -9, -50],
+                       [31, 29, 27]]
         self.initUI()
         
  
@@ -74,9 +83,10 @@ class Window(Frame):
         self.pointNubmer = 0
         self.rows = list()
         
-        self.addNewPoints(True)
-        self.addNewPoints()
-        self.addNewPoints()
+        while(self.pointNubmer < 10):
+            self.addNewPoint()
+        
+        self.insertDefaultValues()
         
         rotateRelativeToXOrYButton = Button(self, text="Rotate", command=self.rotatePlot)
         label1 = Label(self, text="curve relative to ")
@@ -93,7 +103,7 @@ class Window(Frame):
         label3.grid(row=3, column=2, sticky=E, pady=5, padx=5)
         
         
-        addNewPointsButton = Button(self, text="Add points", command=self.addNewPoints)
+        addNewPointsButton = Button(self, text="Add points", command=self.addNewPoint)
         deletePointsButton = Button(self, text="Delete selected points", command=self.deletePoints)
         buildPlotButton = Button(self, text="Build plot", command=self.onbuildPlot)
         
@@ -101,30 +111,29 @@ class Window(Frame):
         deletePointsButton.grid(row=4, column=3, columnspan=3, sticky=NSEW, pady=5, padx=5)
         buildPlotButton.grid(row=4, column=0, columnspan=3, sticky=NSEW, pady=5, padx=5)
     
-    def addNewPoints(self, first = False):
-        for _ in range(3 + first):       
-            label1 = Label(self.inputMenuContainer, text="x")
-            label1.grid(row=self.pointNubmer, column=0, sticky=E, pady=5, padx=5)
-            entry1 = Entry(self.inputMenuContainer)
-            entry1.grid(row=self.pointNubmer, column=1, sticky=EW, pady=5, padx=5)
-                
-            label2 = Label(self.inputMenuContainer, text="y")
-            label2.grid(row=self.pointNubmer, column=2, sticky=E, pady=5, padx=5)
-            entry2 = Entry(self.inputMenuContainer)
-            entry2.grid(row=self.pointNubmer, column=3, sticky=EW, pady=5, padx=5)
-                
-            label3 = Label(self.inputMenuContainer, text="z")
-            label3.grid(row=self.pointNubmer, column=4, sticky=E, pady=5, padx=5)
-            entry3 = Entry(self.inputMenuContainer)
-            entry3.grid(row=self.pointNubmer, column=5, sticky=EW, pady=5, padx=5)
+    def addNewPoint(self):       
+        label1 = Label(self.inputMenuContainer, text="x")
+        label1.grid(row=self.pointNubmer, column=0, sticky=E, pady=5, padx=5)
+        entry1 = Entry(self.inputMenuContainer)
+        entry1.grid(row=self.pointNubmer, column=1, sticky=EW, pady=5, padx=5)
             
-            delete_checkbutton = Checkbutton(self.inputMenuContainer)
-            delete_checkbutton.state(['!alternate'])
-            delete_checkbutton.grid(row=self.pointNubmer, column=6, sticky=EW, pady=5, padx=5)
-            row = [label1, entry1, label2, entry2, label3, entry3, delete_checkbutton]
-            self.rows.append(row)
+        label2 = Label(self.inputMenuContainer, text="y")
+        label2.grid(row=self.pointNubmer, column=2, sticky=E, pady=5, padx=5)
+        entry2 = Entry(self.inputMenuContainer)
+        entry2.grid(row=self.pointNubmer, column=3, sticky=EW, pady=5, padx=5)
             
-            self.pointNubmer += 1
+        label3 = Label(self.inputMenuContainer, text="z")
+        label3.grid(row=self.pointNubmer, column=4, sticky=E, pady=5, padx=5)
+        entry3 = Entry(self.inputMenuContainer)
+        entry3.grid(row=self.pointNubmer, column=5, sticky=EW, pady=5, padx=5)
+        
+        delete_checkbutton = Checkbutton(self.inputMenuContainer)
+        delete_checkbutton.state(['!alternate'])
+        delete_checkbutton.grid(row=self.pointNubmer, column=6, sticky=EW, pady=5, padx=10)
+        row = [label1, entry1, label2, entry2, label3, entry3, delete_checkbutton]
+        self.rows.append(row)
+        
+        self.pointNubmer += 1
     
     
     def deletePoints(self):
@@ -132,7 +141,7 @@ class Window(Frame):
         for row in self.rows:
             if row[6].instate(['selected']):
                 rows.append(row)       
-        if(((len(rows) % 3) == 0) & ((self.pointNubmer - len(rows)) >= 10)):
+        if (self.pointNubmer - len(rows)) >= 10:
             for row in rows:
                 row_number = row[0].grid_info()["row"]
                 for column in row:
@@ -144,6 +153,11 @@ class Window(Frame):
                          column.grid(row=grinfo["row"] - 1, column=grinfo["column"], sticky=grinfo["sticky"], pady=grinfo["pady"], padx=grinfo["padx"])
                 self.pointNubmer -= 1
     
+    def insertDefaultValues(self):
+        for i in range(len(self.rows)):
+            self.rows[i][1].insert(0, self.points[i][0])
+            self.rows[i][3].insert(0, self.points[i][1])
+            self.rows[i][5].insert(0, self.points[i][2])
     
     def onbuildPlot(self):
         self.plot.clear()
@@ -159,27 +173,29 @@ class Window(Frame):
                 self.points.append([float(row[1].get()), float(row[3].get()), float(row[5].get())])
         except:
             return
-        self.points = np.array(self.points)
         self.drawCompoisiteBezierCurveAndPolylineWithPoints(self.points)
-
-
         
-        
-    def drawCompoisiteBezierCurveAndPolylineWithPoints(self, input_points, color="blue"):
+    def drawCompoisiteBezierCurveAndPolylineWithPoints(self, input_points, color="blue", new_point_color="green"):
         points = []
-        for i in range(0, len(input_points), 3):
-            if(i == len(input_points) - 1):
-                break
+        for i in range(1, len(input_points)-1, 2):
             intermediate_point = []
-            for j in range(i, i + 4):
+            for j in range(i, i+2):
                 intermediate_point.append(input_points[j])
             points.append(intermediate_point)
+                
+        points[0].insert(0, input_points[0])
+        points[len(points)-1].append(input_points[len(input_points)-1])
         
-        points = np.array(points)
-        curve = buildCompositeBezierCurveWithPoints(points)
+        if len(points[len(points)-1]) != 3:
+            points[len(points)-1].append(input_points[len(input_points)-1])
+        
+        curve, new_points = buildCompositeBezierCurveWithPoints(points)
         for part in curve:  
             self.plot.plot(part[:, 0], part[:, 1], part[:, 2], color=color)
+        input_points = np.array(input_points)
         self.plot.plot(input_points[:, 0], input_points[:, 1], input_points[:, 2], 'o:', color=color)
+        
+        self.plot.scatter(new_points[:, 0], new_points[:, 1], new_points[:, 2], color=new_point_color)
        
         
     def rotatePlot(self):
@@ -189,22 +205,24 @@ class Window(Frame):
             return
         rotate = None
         
-        if(self.points is None or np.shape(self.points)[0] != len(self.rows)):
+        if(np.shape(self.points)[0] != len(self.rows)):
             self.onbuildPlot()
         
         set_lim_func = None
 
+        points = np.array(self.points)
+        
         if(self.comboBox.get() == "X"): 
-            maximum = np.amax(np.sum((self.points - 
-                                        np.c_[self.points[:, 0], 
-                                        np.zeros((np.shape(self.points)[0], 2), dtype=float)])**2, axis=1)**(1/2))
+            maximum = np.amax(np.sum((points - 
+                                        np.c_[points[:, 0], 
+                                        np.zeros((np.shape(points)[0], 2), dtype=float)])**2, axis=1)**(1/2))
             rotate = rotateRelativeToX
             set_lim_func = lambda: self.plot.set(ylim=(-maximum, maximum), zlim=(-maximum, maximum))
         elif(self.comboBox.get() == "Y"):      
-            maximum = np.amax(np.sum((self.points - 
-                                        np.c_[np.c_[np.zeros((np.shape(self.points)[0], 1), dtype=float), 
-                                                    self.points[:, 1]], 
-                                              np.zeros((np.shape(self.points)[0], 1), dtype=float)])**2, axis=1)**(1/2))
+            maximum = np.amax(np.sum((points - 
+                                        np.c_[np.c_[np.zeros((np.shape(points)[0], 1), dtype=float), 
+                                                    points[:, 1]], 
+                                              np.zeros((np.shape(points)[0], 1), dtype=float)])**2, axis=1)**(1/2))
             rotate = rotateRelativeToY
             set_lim_func = lambda: self.plot.set(xlim=(-maximum, maximum), zlim=(-maximum, maximum))
         else: 
@@ -214,7 +232,6 @@ class Window(Frame):
 
         for _ in decimal_range(0, angle, angle / 30):
             self.points = rotate(angle / 30, np.matrix(self.points))
-            print(type(self.points))
             for i in range(np.shape(self.points)[0]):
                 self.rows[i][1].delete(0,END)
                 self.rows[i][1].insert(0,float(self.points[i, 0]))
@@ -228,7 +245,7 @@ class Window(Frame):
             self.plot.clear()
             set_lim_func()
             self.buildPlot()
-            self.drawCompoisiteBezierCurveAndPolylineWithPoints(oldPoints, color="red")
+            self.drawCompoisiteBezierCurveAndPolylineWithPoints(oldPoints, color="red", new_point_color="purple")
             self.canvas.draw()
             self.canvas.flush_events()
             plt.pause(0.001)
@@ -239,7 +256,6 @@ def decimal_range(start, stop, increment):
         yield start
         start += increment
 
-
 def buildCompositeBezierCurveWithPoints(points):
     def B(coorArr, i, j, t):
         if j == 0:
@@ -248,16 +264,33 @@ def buildCompositeBezierCurveWithPoints(points):
             + B(coorArr, i + 1, j - 1, t)*t)
         
     result = []
-    for k in range(0, points.shape[0]):
+    new_points = []
+    new_point = [0, 0, 0]
+    for k in range(0, len(points)):
         coordinates = []
-        for i in range(points[k, 0].shape[0]):
+        for i in range(3):
             intermediate_point = []
             for coordinate in points[k]:
                 intermediate_point.append(coordinate[i])
             coordinates.append(intermediate_point)
-
-        n = len(coordinates[0])
-        
+            
+        if k != 0:
+            coordinates[0].insert(0, new_point[0])
+            coordinates[1].insert(0, new_point[1])
+            coordinates[2].insert(0, new_point[2])    
+     
+        n = 4    
+        if k != len(points) - 1:
+            
+            new_point[0] = (points[k][len(points[k]) - 1][0] + points[k+1][0][0]) / 2
+            new_point[1] = (points[k][len(points[k]) - 1][1] + points[k+1][0][1]) / 2
+            new_point[2] = (points[k][len(points[k]) - 1][2] + points[k+1][0][2]) / 2
+            
+            new_points.append(new_point.copy())
+            
+            coordinates[0].append(new_point[0])
+            coordinates[1].append(new_point[1])
+            coordinates[2].append(new_point[2])
         intermediate = []
         for t in np.linspace (0., 1., 25):
             intermediate_line = []
@@ -265,11 +298,9 @@ def buildCompositeBezierCurveWithPoints(points):
                 intermediate_line.append(B(coord, 0, n - 1, t))
             intermediate.append(intermediate_line)
         result.append(intermediate)
-    return np.array(result)
-
+    return np.array(result), np.array(new_points)
 
 def rotateRelativeToX(angle, points):
-    print(type(points))
     rotateMatrix = np.matrix([[1, 0, 0],
                               [0, np.cos(angle), -np.sin(angle)],
                               [0, np.sin(angle), np.cos(angle)]])
@@ -286,10 +317,11 @@ def rotateRelativeToY(angle, points):
     
 def main():
     root = Tk()
-    app = Window(root)
+    Window(root)
     root.mainloop()
     
     
     
 if __name__ == '__main__':
     main()
+    

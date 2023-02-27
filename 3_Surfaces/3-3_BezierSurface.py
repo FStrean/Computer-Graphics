@@ -11,7 +11,6 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg,
     NavigationToolbar2Tk)
 from scipy.special import comb
-from matplotlib import cm
 
 import numpy as np
 

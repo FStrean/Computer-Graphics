@@ -1,6 +1,5 @@
 from tkinter import *
 from tkinter.ttk import *
-
 import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
@@ -12,6 +11,7 @@ from matplotlib.backends.backend_tkagg import (
     NavigationToolbar2Tk)
 
 import numpy as np
+from scipy.special import comb
 
 
 class Window(Frame):
@@ -246,6 +246,26 @@ def buildBezierCurveWithPoints(points):
         curve = np.append(curve, [Point(t, points)], axis=0)
     curve = np.delete(curve, 0, 0)
     return curve
+
+# def buildBezierCurveWithPoints(points, nTimes=1000):
+#     def bernstein_poly(i, n, t):
+#         return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
+    
+#     nPoints = len(points)
+#     xPoints = np.array([p[0] for p in points])
+#     yPoints = np.array([p[1] for p in points])
+#     zPoints = np.array([p[2] for p in points])
+
+#     t = np.linspace(0.0, 1.0, nTimes)
+
+#     polynomial_array = np.array([bernstein_poly(i, nPoints-1, t) for i in range(0, nPoints)])
+
+#     xvals = np.dot(xPoints, polynomial_array)
+#     yvals = np.dot(yPoints, polynomial_array)
+#     zvals = np.dot(zPoints, polynomial_array)
+#     print(np.c_[np.c_[xvals, yvals], zvals])
+
+#     return np.c_[np.c_[xvals, yvals], zvals]
 
 
 def rotateRelativeToX(angle, points):
